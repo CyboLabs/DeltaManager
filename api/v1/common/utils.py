@@ -25,7 +25,7 @@ def make_md5sum(filename, bs=524288):
 
 
 def create_user(username, password, first_name="", last_name="",
-                email="", is_staff=False):
+                email="", is_staff=False, is_super=False):
 
     try:
         User.objects.get(username__exact=username)
@@ -39,7 +39,8 @@ def create_user(username, password, first_name="", last_name="",
                                     first_name=first_name,
                                     last_name=last_name,
                                     email=email)
-    if is_staff:
+    user.is_staff = is_staff
+    if is_super:
         user.is_staff = True
         user.is_superuser = True
     user.save()
@@ -58,9 +59,9 @@ def create_owner(user):
 
 
 def create_user_owner(username, password, first_name='', last_name='',
-                      email='', is_staff=False):
+                      email='', is_staff=False, is_super=False):
     user = create_user(username, password, first_name, last_name,
-                       email, is_staff)
+                       email, is_staff, is_super)
     owner = create_owner(user)
     return user, owner
 

@@ -7,9 +7,10 @@ from django.views.decorators.csrf import csrf_exempt
 
 from .errors import RequestExists
 from .utils import create_request, handle_file_upload
-from ..common.errors import FileExists
-from ..common.models import Device, RequestUpload
+from ..common.errors import FileExists, UserExists, OwnerExists, ManufacturerExists, DeviceExists
+from ..common.models import Device, RequestUpload, Manufacturer
 from ..common.response import JsonResponse
+from ..common.utils import create_user_owner, create_manufacturer, create_device
 
 
 def _post_req_checker(request):
@@ -154,4 +155,187 @@ def _login(request):
         raise Http404
     res_data['result'] = 'success'
     res_data['data']['sessionid'] = request.session.session_key
+    return JsonResponse(res_data, status=200)
+
+
+def _logout(request):
+    temp = _post_req_checker(request)
+    if temp:
+        raise Http404
+
+    if not request.user.is_authenticated():
+        raise Http404
+
+    logout(request)
+
+    res_data = {
+        'result': 'success',
+        'data': {
+            'message': 'Logout successful'
+        }
+    }
+    return JsonResponse(res_data, status=200)
+
+
+def view_create_user(request):
+    temp = _post_req_checker(request)
+    if temp:
+        raise Http404
+
+    if not request.user.is_authenticated():
+        raise Http404
+
+    if not request.user.is_staff:
+        raise Http404
+
+    res_data = {
+        'result': 'failed',
+        'data': {}
+    }
+
+    username = request.POST.get('username')
+    if not username:
+        res_data['data']['message'] = "username parameter not supplied"
+        return JsonResponse(res_data, status=400)
+    password = request.POST.get('password')
+    if not password:
+        res_data['data']['message'] = "password parameter not supplied"
+        return JsonResponse(res_data, status=400)
+
+    first_name = request.POST.get('first_name', '')
+    last_name = request.POST.get('last_name', '')
+    email = request.POST.get('email', '')
+
+    is_staff = bool(request.POST.get('is_staff', False))
+    is_super = bool(request.POST.get('is_super', False))
+    if not request.user.is_superuser and (
+            is_staff or is_super):
+        res_data['data']['message'] = (
+            "You are not authorised to give people raised rights")
+        return JsonResponse(res_data, status=403)
+
+    try:
+        user, owner = create_user_owner(username, password,
+                                        first_name=first_name,
+                                        last_name=last_name,
+                                        email=email,
+                                        is_staff=is_staff,
+                                        is_super=is_super)
+    except UserExists:
+        res_data['data']['message'] = (
+            'user already exists'
+        )
+        return JsonResponse(res_data, status=400)
+    except OwnerExists:
+        res_data['data']['message'] = (
+            'owner already exists'
+        )
+        return JsonResponse(res_data, status=400)
+
+    res_data['result'] = 'success'
+    res_data['data']['message'] = 'User successfully created'
+    res_data['data']['owner_id'] = owner.id
+    res_data['data']['username'] = user.username
+    return JsonResponse(res_data, status=200)
+
+
+def view_create_manufacturer(request):
+    temp = _post_req_checker(request)
+    if temp:
+        raise Http404
+
+    if not request.user.is_authenticated():
+        raise Http404
+
+    if not request.user.is_staff:
+        raise Http404
+
+    res_data = {
+        'result': 'failed',
+        'data': {}
+    }
+
+    code_name = request.POST.get('code_name')
+    if not code_name:
+        res_data['data']['message'] = "code_name parameter not supplied"
+        return JsonResponse(res_data, status=400)
+    full_name = request.POST.get('full_name')
+    if not full_name:
+        res_data['data']['message'] = "full_name parameter not supplied"
+        return JsonResponse(res_data, status=400)
+
+    try:
+        manu = create_manufacturer(code_name, full_name)
+    except ManufacturerExists:
+        res_data['data']['message'] = (
+            'manufacturer exists already'
+        )
+        return JsonResponse(res_data, status=400)
+
+    res_data['result'] = 'success'
+    res_data['data']['message'] = 'manufacturer successfully created'
+    res_data['data']['manufacturer_id'] = manu.id
+    return JsonResponse(res_data, status=200)
+
+
+def view_create_device(request):
+    temp = _post_req_checker(request)
+    if temp:
+        raise Http404
+
+    if not request.user.is_authenticated():
+        raise Http404
+
+    if not request.user.is_staff:
+        raise Http404
+
+    res_data = {
+        'result': 'failed',
+        'data': {}
+    }
+
+    code_name = request.POST.get('code_name')
+    if not code_name:
+        res_data['data']['message'] = "code_name parameter not supplied"
+        return JsonResponse(res_data, status=400)
+    full_name = request.POST.get('full_name')
+    if not full_name:
+        res_data['data']['message'] = "full_name parameter not supplied"
+        return JsonResponse(res_data, status=400)
+    manufacturer = request.POST.get('manufacturer')
+    if not manufacturer:
+        res_data['data']['message'] = "manufacturer parameter not supplied"
+        return JsonResponse(res_data, status=400)
+
+    try:
+        manufacturer = int(manufacturer)
+    except ValueError:
+        manu_q = Q(code_name=manufacturer)
+    else:
+        manu_q = Q(id=manufacturer)
+    try:
+        manu_obj = Manufacturer.objects.get(manu_q)
+    except Manufacturer.DoesNotExist:
+        res_data['data']['message'] = (
+            '%s: manufacturer does not exist' % str(manufacturer)
+        )
+        return JsonResponse(res_data, status=404)
+    except Manufacturer.MultipleObjectsReturned:
+        res_data['data']['message'] = (
+            '%s: multiple manufacturers found. try using the id.'
+            % str(manufacturer)
+        )
+        return JsonResponse(res_data, status=400)
+
+    try:
+        device = create_device(code_name, full_name, manu_obj)
+    except DeviceExists:
+        res_data['data']['message'] = (
+            'device exists already'
+        )
+        return JsonResponse(res_data, status=400)
+
+    res_data['result'] = 'success'
+    res_data['data']['message'] = 'device successfully created'
+    res_data['data']['device_id'] = device.id
     return JsonResponse(res_data, status=200)
