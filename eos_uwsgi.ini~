@@ -1,0 +1,24 @@
+# eos_uwsgi.ini file
+[uwsgi]
+
+# Django-related settings
+# the base directory (full path)
+chdir           = /django/eos
+# Django's wsgi files
+module          = eos.wsgi
+
+# process-related settings
+# master
+master          = true
+# maximum number of worker processes
+processes       = 4
+# the socket (use the full path to be safe
+socket          = /django/eos/eos.sock
+# ... with appropriate permissions - may be needed
+chmod-socket    = 666
+# clear environment on exit
+vacuum          = true
+
+disable-logging = true
+
+env = DJANGO_SETTINGS_MODULE=eos.settings
