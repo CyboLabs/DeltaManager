@@ -1,19 +1,17 @@
 from __future__ import absolute_import, print_function
 
 from django.db.models import Q
-from django.core.files import File as dj_file
+from django.core.files import File as DJFile
 
 from api.v1._auth.utils import *
 from api.v1.common.utils import *
 from api.v1.common.errors import *
 from api.v1.common.models import *
-from eos.settings import DOWNLOAD_STORAGE
 
 from getpass import getpass
-from random import choice
-from string import ascii_letters, digits
 from tempfile import mkstemp
 from os import close as os_close, remove
+
 
 def get_device(_id=None, code_name=None, full_name=None):
     q_id = Q(id=_id) if _id else Q()
@@ -137,7 +135,7 @@ def create_user_base():
     for username, password, first_name, \
             last_name, email, is_staff, is_super in user_list:
         if User.objects.filter(username=username):
-            pass
+            continue
         if password is None:
             password = getpass('enter password for user %s: ' % username)
             if password != getpass('reenter password: '):
@@ -174,7 +172,7 @@ def process_file(device, owner, i):
     f.write(str.encode(req.reference))
     f.close()
     f = open(t[1], 'rb')
-    f = dj_file(f)
+    f = DJFile(f)
     handle_file_upload(f, req)
     f.close()
     os_close(t[0])
@@ -182,6 +180,11 @@ def process_file(device, owner, i):
 
 
 def create_file_base():
+    print('This will create LOTS of database entries.')
+    print('Only do this if you are making a testing server.')
+    r = input('Enter "I AM TESTING" to continue: ')
+    if r != 'I AM TESTING':
+        return
     for device in Device.objects.all():
         for owner in Owner.objects.all():
             for i in range(1, 6):
