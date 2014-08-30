@@ -150,9 +150,11 @@ def list_files(request):
 
     start, size = _calc_page_size(request)
 
+    # reverse order by id rather than date
+    # there seems to be an issue with ordering within the range of seconds
     model_list = File.objects.filter(
         device_q, owner_q
-    )[start:start+size]
+    ).order_by('-id')[start:start+size]
     if not model_list:
         res_data['data']['message'] = 'no files to show'
         return JsonResponse(res_data, status=404)
