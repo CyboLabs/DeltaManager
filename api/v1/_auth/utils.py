@@ -21,13 +21,13 @@ def create_request(user, device, name, old_version='', version=''):
     except RequestUpload.DoesNotExist:
         pass
     else:
-        raise RequestExists((user, device, name))
+        raise RequestExists((user.username, device.code_name, name))
     try:
         File.objects.get(owner=owner, device=device, name=name)
     except File.DoesNotExist:
         pass
     else:
-        raise FileExists((user, device, name))
+        raise FileExists((user.username, device.code_name, name))
 
     reference = ''.join(choice(ascii_letters + digits) for _ in range(32))
     return RequestUpload.objects.create(owner=owner,
