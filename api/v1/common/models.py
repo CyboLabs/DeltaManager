@@ -7,6 +7,7 @@ from .fields import Md5SumField
 from eos.settings import DOWNLOAD_URL
 
 from os.path import join
+from datetime import datetime
 
 
 class Owner(models.Model):
@@ -65,6 +66,7 @@ class File(models.Model):
     md5sum = Md5SumField()
     # for Deltas
     old_version = models.CharField(max_length=20, blank=True, null=True)
+    date = models.DateTimeField(default=datetime.now)
 
     def can_edit(self, user):
         return user == self.owner.user or user.is_admin
