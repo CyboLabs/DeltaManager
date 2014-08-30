@@ -21,3 +21,6 @@ class Md5SumField(Field):
 
     def get_internal_type(self):
         return 'TextField'
+
+from south.modelsinspector import add_introspection_rules
+add_introspection_rules([], ["^api\.v1\.common\.fields\.Md5SumField"])

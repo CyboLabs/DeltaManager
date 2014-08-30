@@ -45,6 +45,7 @@ INSTALLED_APPS = (
     'api.v1._auth',
     'api.v1.files',
     'api.v1.common',
+    'south',
 )
 
 MIDDLEWARE_CLASSES = (
