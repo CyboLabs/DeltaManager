@@ -60,3 +60,6 @@ d/
 
 db.sqlite3
 secrets.json
+eos_nginx.conf
+eos_uwsgi.ini
+uwsgi_params
