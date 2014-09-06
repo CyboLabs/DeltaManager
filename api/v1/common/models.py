@@ -20,8 +20,11 @@ class Owner(models.Model):
         return len(File.objects.filter(owner=self))
 
     def worked_on_devices(self):
-        file_list = File.objects.filter(owner=self)
-        return file_list.values_list('device')
+        devices = []
+        for file in File.objects.filter(owner=self):
+            if not file.device.code_name in devices:
+                devices.append(file.device.code_name)
+        return devices
 
     def __str__(self):
         return self.user.username
